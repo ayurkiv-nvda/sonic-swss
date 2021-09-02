@@ -33,6 +33,8 @@ private:
     void doTask(swss::SelectableTimer &timer);
     void doCfgSensorsTableTask(Consumer &consumer);
     void doAppSwitchTableTask(Consumer &consumer);
+    bool switchTunnelSetVxlanParams(swss::FieldValueTuple i);
+    bool switchTunnelResetDefault();
     void initSensorsTable();
     void querySwitchTpidCapability();
 
@@ -40,6 +42,7 @@ private:
     void doTask(swss::NotificationConsumer& consumer);
     swss::DBConnector *m_db;
     swss::Table m_switchTable;
+    sai_object_id_t switch_tunnel_id;
 
     // ASIC temperature sensors
     std::shared_ptr<swss::DBConnector> m_stateDb = nullptr;
