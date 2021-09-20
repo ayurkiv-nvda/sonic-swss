@@ -14,9 +14,6 @@ extern sai_object_id_t gSwitchId;
 extern sai_switch_api_t *sai_switch_api;
 extern MacAddress gVxlanMacAddress;
 
-
-#define SWITCH_TUNNEL "switch_tunnel"
-
 const map<string, sai_switch_attr_t> switch_attribute_map =
 {
     {"fdb_unicast_miss_packet_action",      SAI_SWITCH_ATTR_FDB_UNICAST_MISS_PACKET_ACTION},
@@ -59,14 +56,18 @@ SwitchOrch::SwitchOrch(DBConnector *db, vector<TableConnector>& connectors, Tabl
     auto executorT = new ExecutableTimer(m_sensorsPollerTimer, this, "ASIC_SENSORS_POLL_TIMER");
     Orch::addExecutor(executorT);
 
-    sai_attribute_t attrs[2];
+    vector<sai_attribute_t> attrs;
+    sai_attribute_t attr;
     sai_status_t status;
 
-    attrs[0].id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_TYPE;
-    attrs[0].value.s32 = SAI_TUNNEL_TYPE_VXLAN;
-    attrs[1].id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
-    attrs[1].value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_EPHEMERAL;
-    status = sai_switch_api->create_switch_tunnel(&switch_tunnel_id, gSwitchId, 2, attrs);
+    attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_TYPE;
+    attr.value.s32 = SAI_TUNNEL_TYPE_VXLAN;
+    attrs.push_back(attr);
+    attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
+    attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_EPHEMERAL;
+    attrs.push_back(attr);
+
+    status = sai_switch_api->create_switch_tunnel(&switch_tunnel_id, gSwitchId, (uint32_t)attrs.size(), attrs.data());
 
     if (status != SAI_STATUS_SUCCESS)
     {
@@ -156,6 +157,23 @@ bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple i)
     auto attribute = fvField(i);
     auto value = fvValue(i);
     sai_attribute_t attr;
+    sai_status_t status;
+
+    if (!m_userSportModeEnabled)
+    {
+        // Enable Vxlan src port range feauture
+        attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
+        attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED;
+        status = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
+
+        m_userSportModeEnabled = true;
+
+        if (status != SAI_STATUS_SUCCESS)
+        {
+            SWSS_LOG_ERROR("Failed to set SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED  src port mode rv:%d",  status);
+            return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
+        }
+    }
 
     attr.id = switch_tunnel_attribute_map.at(attribute);
     switch (attr.id)
@@ -171,42 +189,14 @@ bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple i)
             return false;
     }
 
-    sai_status_t status  = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
+    status  = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to set tunnnel switch attribute %s to %s, rv:%d", attribute.c_str(), value.c_str(), status);
         return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
     }
 
-    // Enable Vxlan src port range feauture
-    attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
-    attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED;
-    status = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
-
-    if (status != SAI_STATUS_SUCCESS)
-    {
-        SWSS_LOG_ERROR("Failed to set SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED  src port mode rv:%d",  status);
-        return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
-    }
-
     SWSS_LOG_NOTICE("Set switch attribute %s to %s", attribute.c_str(), value.c_str());
-    return false;
-}
-
-bool SwitchOrch::switchTunnelResetDefault()
-{
-    sai_attribute_t attr;
-
-    attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
-    attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_EPHEMERAL;
-    sai_status_t status = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
-    if (status != SAI_STATUS_SUCCESS)
-    {
-        SWSS_LOG_ERROR("Failed to reset switch tunnel mode rv:%d", status);
-        return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
-    }
-    SWSS_LOG_NOTICE("Switch tunnel reset to default");
-
     return false;
 }
 
@@ -306,28 +296,6 @@ void SwitchOrch::doAppSwitchTableTask(Consumer &consumer)
 
                 SWSS_LOG_NOTICE("Set switch attribute %s to %s", attribute.c_str(), value.c_str());
             }
-            if (retry == true)
-            {
-                it++;
-            }
-            else
-            {
-                it = consumer.m_toSync.erase(it);
-            }
-        }
-        else if (op == DEL_COMMAND)
-        {
-            string key = kfvKey(t);
-
-            if (key == SWITCH_TUNNEL)
-            {
-                retry = switchTunnelResetDefault();
-            }
-            else
-            {
-                SWSS_LOG_ERROR("Unsupported key: %s for DEL oper", key.c_str());
-            }
-
             if (retry == true)
             {
                 it++;

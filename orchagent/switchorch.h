@@ -42,7 +42,6 @@ private:
     void doTask(swss::NotificationConsumer& consumer);
     swss::DBConnector *m_db;
     swss::Table m_switchTable;
-    sai_object_id_t switch_tunnel_id;
 
     // ASIC temperature sensors
     std::shared_ptr<swss::DBConnector> m_stateDb = nullptr;
@@ -55,6 +54,7 @@ private:
     bool m_numTempSensorsInitialized = false;
     bool m_sensorsMaxTempSupported = true;
     bool m_sensorsAvgTempSupported = true;
+    bool m_userSportModeEnabled = false;
 
     // Information contained in the request from
     // external program for orchagent pre-shutdown state check
