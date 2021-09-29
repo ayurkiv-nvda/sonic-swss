@@ -67,11 +67,16 @@ SwitchOrch::SwitchOrch(DBConnector *db, vector<TableConnector>& connectors, Tabl
     attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_EPHEMERAL;
     attrs.push_back(attr);
 
-    status = sai_switch_api->create_switch_tunnel(&switch_tunnel_id, gSwitchId, (uint32_t)attrs.size(), attrs.data());
+    status = sai_switch_api->create_switch_tunnel(&switch_tunnel_id, gSwitchId, static_cast<uint32_t>(attrs.size()), attrs.data());
 
     if (status != SAI_STATUS_SUCCESS)
     {
-        SWSS_LOG_ERROR("Failed to create switch_tunnel object attribute");
+        SWSS_LOG_ERROR("Failed to create switch_tunnel object");
+        task_process_status handle_status = handleSaiCreateStatus(SAI_API_SWITCH, status);
+        if (handle_status != task_success)
+        {
+            throw runtime_error("SwitchOrch initialization failure");
+        }
     }
 }
 
@@ -152,21 +157,21 @@ void SwitchOrch::doCfgSensorsTableTask(Consumer &consumer)
 }
 
 
-bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple i)
+bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
 {
-    auto attribute = fvField(i);
-    auto value = fvValue(i);
+    auto attribute = fvField(val);
+    auto value = fvValue(val);
     sai_attribute_t attr;
     sai_status_t status;
 
-    if (!m_userSportModeEnabled)
+    if (!m_vxlanSportUserModeEnabled)
     {
         // Enable Vxlan src port range feauture
         attr.id = SAI_SWITCH_TUNNEL_ATTR_TUNNEL_VXLAN_UDP_SPORT_MODE;
         attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED;
         status = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
 
-        m_userSportModeEnabled = true;
+        m_vxlanSportUserModeEnabled = true;
 
         if (status != SAI_STATUS_SUCCESS)
         {
@@ -229,7 +234,9 @@ void SwitchOrch::doAppSwitchTableTask(Consumer &consumer)
                     {
                         retry  = switchTunnelSetVxlanParams(i);
                         if (retry == true)
+                        {
                             break;
+                        }
 
                         continue;
                     }
