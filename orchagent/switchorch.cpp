@@ -157,7 +157,7 @@ void SwitchOrch::doCfgSensorsTableTask(Consumer &consumer)
 }
 
 
-bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
+sai_status_t SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
 {
     auto attribute = fvField(val);
     auto value = fvValue(val);
@@ -176,7 +176,7 @@ bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
         if (status != SAI_STATUS_SUCCESS)
         {
             SWSS_LOG_ERROR("Failed to set SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED  src port mode rv:%d",  status);
-            return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
+            return status;
         }
     }
 
@@ -191,18 +191,18 @@ bool SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
             break;
         default:
             SWSS_LOG_ERROR("Invalid switch tunnel attribute id %d", attr.id);
-            return false;
+            return SAI_STATUS_SUCCESS;
     }
 
     status  = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to set tunnnel switch attribute %s to %s, rv:%d", attribute.c_str(), value.c_str(), status);
-        return handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry;
+        return status;
     }
 
     SWSS_LOG_NOTICE("Set switch attribute %s to %s", attribute.c_str(), value.c_str());
-    return false;
+    return SAI_STATUS_SUCCESS;
 }
 
 void SwitchOrch::doAppSwitchTableTask(Consumer &consumer)
@@ -230,16 +230,15 @@ void SwitchOrch::doAppSwitchTableTask(Consumer &consumer)
                         SWSS_LOG_ERROR("Unsupported switch attribute %s", attribute.c_str());
                         break;
                     }
-                    else
-                    {
-                        retry  = switchTunnelSetVxlanParams(i);
-                        if (retry == true)
-                        {
-                            break;
-                        }
 
-                        continue;
+                    auto status = switchTunnelSetVxlanParams(i);
+                    if (status != SAI_STATUS_SUCCESS && handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry)
+                    {
+                        retry = true;
+                        break;
                     }
+
+                    continue;
                 }
 
                 auto value = fvValue(i);
