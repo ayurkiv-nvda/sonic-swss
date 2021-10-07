@@ -35,7 +35,7 @@ private:
     void doAppSwitchTableTask(Consumer &consumer);
     void initSensorsTable();
     void querySwitchTpidCapability();
-    sai_status_t switchTunnelSetVxlanParams(swss::FieldValueTuple &val);
+    sai_status_t setSwitchTunnelVxlanParams(swss::FieldValueTuple &val);
 
     swss::NotificationConsumer* m_restartCheckNotificationConsumer;
     void doTask(swss::NotificationConsumer& consumer);

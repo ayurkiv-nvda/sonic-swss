@@ -157,7 +157,7 @@ void SwitchOrch::doCfgSensorsTableTask(Consumer &consumer)
 }
 
 
-sai_status_t SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
+sai_status_t SwitchOrch::setSwitchTunnelVxlanParams(swss::FieldValueTuple &val)
 {
     auto attribute = fvField(val);
     auto value = fvValue(val);
@@ -171,13 +171,13 @@ sai_status_t SwitchOrch::switchTunnelSetVxlanParams(swss::FieldValueTuple &val)
         attr.value.s32 = SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED;
         status = sai_switch_api->set_switch_tunnel_attribute(switch_tunnel_id, &attr);
 
-        m_vxlanSportUserModeEnabled = true;
-
         if (status != SAI_STATUS_SUCCESS)
         {
             SWSS_LOG_ERROR("Failed to set SAI_TUNNEL_VXLAN_UDP_SPORT_MODE_USER_DEFINED  src port mode rv:%d",  status);
             return status;
         }
+
+        m_vxlanSportUserModeEnabled = true;
     }
 
     attr.id = switch_tunnel_attribute_map.at(attribute);
@@ -231,8 +231,8 @@ void SwitchOrch::doAppSwitchTableTask(Consumer &consumer)
                         break;
                     }
 
-                    auto status = switchTunnelSetVxlanParams(i);
-                    if (status != SAI_STATUS_SUCCESS && handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry)
+                    auto status = setSwitchTunnelVxlanParams(i);
+                    if ((status != SAI_STATUS_SUCCESS) && (handleSaiSetStatus(SAI_API_SWITCH, status) == task_need_retry))
                     {
                         retry = true;
                         break;
