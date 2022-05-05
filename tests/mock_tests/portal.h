@@ -5,6 +5,8 @@
 
 #include "aclorch.h"
 #include "crmorch.h"
+#include "sfloworch.h"
+#include "directory.h"
 
 #undef protected
 #undef private
@@ -57,6 +59,39 @@ struct Portal
         static void getResAvailableCounters(CrmOrch *crmOrch)
         {
             crmOrch->getResAvailableCounters();
+        }
+    };
+
+    struct SflowOrchInternal
+    {
+        static bool getSflowStatusEnable(SflowOrch &obj)
+        {
+            return obj.m_sflowStatus;
+        }
+
+        static SflowRateSampleMap getSflowSampleMap(SflowOrch &obj)
+        {
+            return obj.m_sflowRateSampleMap;
+        }
+
+        static SflowPortInfoMap getSflowPortInfoMap(SflowOrch &obj)
+        {
+            return obj.m_sflowPortInfoMap;
+        }
+    };
+
+    struct DirectoryInternal
+    {
+        template <typename T>
+        static void clear(Directory<T> &obj)
+        {
+            obj.m_values.clear();
+        }
+
+        template <typename T>
+        static bool empty(Directory<T> &obj)
+        {
+            return obj.m_values.empty();
         }
     };
 };

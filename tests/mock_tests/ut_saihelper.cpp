@@ -65,6 +65,7 @@ namespace ut_helper
 
         sai_api_query(SAI_API_SWITCH, (void **)&sai_switch_api);
         sai_api_query(SAI_API_BRIDGE, (void **)&sai_bridge_api);
+        sai_api_query(SAI_API_SAMPLEPACKET, (void **)&sai_samplepacket_api);
         sai_api_query(SAI_API_VIRTUAL_ROUTER, (void **)&sai_virtual_router_api);
         sai_api_query(SAI_API_PORT, (void **)&sai_port_api);
         sai_api_query(SAI_API_LAG, (void **)&sai_lag_api);
@@ -87,12 +88,17 @@ namespace ut_helper
         return SAI_STATUS_SUCCESS;
     }
 
-    void uninitSaiApi()
+    sai_status_t uninitSaiApi()
     {
-        sai_api_uninitialize();
+        auto status = sai_api_uninitialize();
+        if (status != SAI_STATUS_SUCCESS)
+        {
+            return status;
+        }
 
         sai_switch_api = nullptr;
         sai_bridge_api = nullptr;
+        sai_samplepacket_api = nullptr;
         sai_virtual_router_api = nullptr;
         sai_port_api = nullptr;
         sai_lag_api = nullptr;
@@ -106,6 +112,8 @@ namespace ut_helper
         sai_hostif_api = nullptr;
         sai_buffer_api = nullptr;
         sai_queue_api = nullptr;
+
+        return SAI_STATUS_SUCCESS;
     }
 
     map<string, vector<FieldValueTuple>> getInitialSaiPorts()
