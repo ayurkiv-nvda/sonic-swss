@@ -300,7 +300,7 @@ namespace sflow_test
 
     /* Test enabling/disabling SFLOW */
     TEST_F(SflowOrchTest, SflowEnableDisable)
-    {
+    {      
         MockSflowOrch mock_orch;
         {
             auto table1 = deque<KeyOpFieldsValuesTuple>(
@@ -324,15 +324,35 @@ namespace sflow_test
                         "global",
                         SET_COMMAND,
                         {
-                            {"admin_state", "up"},
+                            {"admin_state", "up"}
                         }
                     }
                 });
             mock_orch.doSflowTableTask(table2);
+
+            ASSERT_TRUE(Portal::SflowOrchInternal::getSflowStatusEnable(mock_orch.get()));
+        }
+    }
+       /* Test create/delete SFLOW */
+    TEST_F(SflowOrchTest, SflowCreateDelete)
+    {      
+        MockSflowOrch mock_orch;
+        {
+            auto table3 = deque<KeyOpFieldsValuesTuple>(
+                {
+                    {
+                        "global",
+                        SET_COMMAND,
+                        {
+                            {"admin_state", "up"},
+                        }
+                    }
+                });
+            mock_orch.doSflowTableTask(table3);
             ASSERT_TRUE(mock_orch.get().m_sflowStatus);
         }
         {
-            auto table3 = deque<KeyOpFieldsValuesTuple>(
+            auto table4 = deque<KeyOpFieldsValuesTuple>(
                 {
                     {
                         "global",
@@ -342,8 +362,9 @@ namespace sflow_test
                         }
                     }
                 });
-            mock_orch.doSflowTableTask(table3);
+            mock_orch.doSflowTableTask(table4);
             ASSERT_FALSE(mock_orch.get().m_sflowStatus);
         }
     }
 }
+
