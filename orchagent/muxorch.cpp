@@ -853,7 +853,7 @@ void MuxAclHandler::createMuxAclTable(sai_object_id_t port, string strTable)
 void MuxAclHandler::createMuxAclRule(shared_ptr<AclRulePacket> rule, string strTable)
 {
     SWSS_LOG_ENTER();
-
+    /*
     string attr_name, attr_value;
 
     attr_name = RULE_PRIORITY;
@@ -870,6 +870,7 @@ void MuxAclHandler::createMuxAclRule(shared_ptr<AclRulePacket> rule, string strT
     rule->validateAddAction(attr_name, attr_value);
 
     gAclOrch->addAclRule(rule, strTable);
+    */
 }
 
 void MuxAclHandler::bindAllPorts(AclTable &acl_table)
