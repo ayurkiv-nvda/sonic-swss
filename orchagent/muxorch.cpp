@@ -49,6 +49,12 @@ extern sai_router_interface_api_t* sai_router_intfs_api;
 #define MUX_HW_STATE_UNKNOWN "unknown"
 #define MUX_HW_STATE_ERROR "error"
 
+
+static inline string getPlatform()
+{
+    return getenv("platform") ? getenv("platform") : "";
+}
+
 const map<std::pair<MuxState, MuxState>, MuxStateChange> muxStateTransition =
 {
     { { MuxState::MUX_STATE_INIT, MuxState::MUX_STATE_ACTIVE}, MuxStateChange::MUX_STATE_INIT_ACTIVE
@@ -753,7 +759,7 @@ MuxAclHandler::MuxAclHandler(sai_object_id_t port, string alias)
     SWSS_LOG_ENTER();
 
     // There is one handler instance per MUX port
-    string table_name = MUX_ACL_TABLE_NAME;
+    string table_name = getPlatform() == MLNX_PLATFORM_SUBSTRING ? EGRESS_TABLE_DROP : MUX_ACL_TABLE_NAME;
     string rule_name = MUX_ACL_RULE_NAME;
 
     port_ = port;
@@ -791,7 +797,7 @@ MuxAclHandler::MuxAclHandler(sai_object_id_t port, string alias)
 MuxAclHandler::~MuxAclHandler(void)
 {
     SWSS_LOG_ENTER();
-    string table_name = MUX_ACL_TABLE_NAME;
+    string table_name = getPlatform() == MLNX_PLATFORM_SUBSTRING ? EGRESS_TABLE_DROP : MUX_ACL_TABLE_NAME;
     string rule_name = MUX_ACL_RULE_NAME;
 
     SWSS_LOG_NOTICE("Un-Binding port %" PRIx64 "", port_);
@@ -837,7 +843,7 @@ void MuxAclHandler::createMuxAclTable(sai_object_id_t port, string strTable)
     auto dropType = gAclOrch->getAclTableType(TABLE_TYPE_DROP);
     assert(dropType);
     acl_table.validateAddType(*dropType);
-    acl_table.stage = ACL_STAGE_INGRESS;
+    acl_table.stage = getPlatform() == MLNX_PLATFORM_SUBSTRING ? ACL_STAGE_EGRESS : ACL_STAGE_INGRESS;
     gAclOrch->addAclTable(acl_table);
     bindAllPorts(acl_table);
 }
