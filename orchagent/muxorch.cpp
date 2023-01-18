@@ -49,13 +49,6 @@ extern sai_router_interface_api_t* sai_router_intfs_api;
 #define MUX_HW_STATE_UNKNOWN "unknown"
 #define MUX_HW_STATE_ERROR "error"
 
-
-static inline bool isIngressAcl()
-{
-    string platform = getenv("platform") ? getenv("platform") : "";
-    return platform != MLNX_PLATFORM_SUBSTRING;
-}
-
 const map<std::pair<MuxState, MuxState>, MuxStateChange> muxStateTransition =
 {
     { { MuxState::MUX_STATE_INIT, MuxState::MUX_STATE_ACTIVE}, MuxStateChange::MUX_STATE_INIT_ACTIVE
@@ -791,8 +784,14 @@ MuxAclHandler::MuxAclHandler(sai_object_id_t port, string alias)
 {
     SWSS_LOG_ENTER();
 
+    string value;
+    shared_ptr<DBConnector> m_config_db = shared_ptr<DBConnector>(new DBConnector("CONFIG_DB", 0));
+    unique_ptr<Table> m_systemDefaultsTable = unique_ptr<Table>(new Table(m_config_db.get(), "SYSTEM_DEFAULTS"));
+    m_systemDefaultsTable->hget("mux_tunnel_ingress_acl", "state", value);
+    is_ingress_acl_ = value != "disabled";
+
     // There is one handler instance per MUX port
-    string table_name = isIngressAcl() ? MUX_ACL_TABLE_NAME : EGRESS_TABLE_DROP;
+    string table_name = is_ingress_acl_ ? MUX_ACL_TABLE_NAME : EGRESS_TABLE_DROP;
     string rule_name = MUX_ACL_RULE_NAME;
 
     port_ = port;
@@ -830,7 +829,7 @@ MuxAclHandler::MuxAclHandler(sai_object_id_t port, string alias)
 MuxAclHandler::~MuxAclHandler(void)
 {
     SWSS_LOG_ENTER();
-    string table_name = isIngressAcl() ? MUX_ACL_TABLE_NAME : EGRESS_TABLE_DROP;
+    string table_name = is_ingress_acl_ ? MUX_ACL_TABLE_NAME : EGRESS_TABLE_DROP;
     string rule_name = MUX_ACL_RULE_NAME;
 
     SWSS_LOG_NOTICE("Un-Binding port %" PRIx64 "", port_);
@@ -876,7 +875,7 @@ void MuxAclHandler::createMuxAclTable(sai_object_id_t port, string strTable)
     auto dropType = gAclOrch->getAclTableType(TABLE_TYPE_DROP);
     assert(dropType);
     acl_table.validateAddType(*dropType);
-    acl_table.stage = isIngressAcl() ? ACL_STAGE_INGRESS : ACL_STAGE_EGRESS;
+    acl_table.stage = is_ingress_acl_ ? ACL_STAGE_INGRESS : ACL_STAGE_EGRESS;
     gAclOrch->addAclTable(acl_table);
     bindAllPorts(acl_table);
 }
