@@ -43,6 +43,10 @@ else
 DBGFLAGS = -g -DNDEBUG
 endif
 
+if GCOV_ENABLED
+DBGFLAGS = -DGCOV_ENABLED
+endif
+
 orchagent_SOURCES = \
             main.cpp \
             $(top_srcdir)/lib/gearboxutils.cpp \

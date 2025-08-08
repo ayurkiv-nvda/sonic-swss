@@ -45,10 +45,18 @@ void usage()
 
 void handlePortConfigFromConfigDB(ProducerStateTable &p, DBConnector &cfgDb, bool warm);
 
+#ifdef GCOV_ENABLED
+extern int gcov_register();
+#endif
+
 int main(int argc, char **argv)
 {
     try
     {
+#ifdef GCOV_ENABLED
+        gcov_register();
+#endif
+
         Logger::linkToDbNative("portsyncd");
         int opt;
 
