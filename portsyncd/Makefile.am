@@ -8,6 +8,10 @@ else
 DBGFLAGS = -g
 endif
 
+if GCOV_ENABLED
+DBGFLAGS = -DGCOV_ENABLED
+endif
+
 portsyncd_SOURCES = $(top_srcdir)/lib/gearboxutils.cpp portsyncd.cpp linksync.cpp  $(top_srcdir)/cfgmgr/shellcmd.h
 
 portsyncd_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_ASAN)

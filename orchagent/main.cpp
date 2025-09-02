@@ -340,8 +340,16 @@ bool getSystemPortConfigList(DBConnector *cfgDb, DBConnector *appDb, vector<sai_
     return true;
 }
 
+#ifdef GCOV_ENABLED
+extern int gcov_register();
+#endif
+
 int main(int argc, char **argv)
 {
+#ifdef GCOV_ENABLED
+    gcov_register();
+#endif
+
     swss::Logger::linkToDbNative("orchagent");
 
     SWSS_LOG_ENTER();

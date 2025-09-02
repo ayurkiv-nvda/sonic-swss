@@ -26,6 +26,10 @@ else
 DBGFLAGS = -g
 endif
 
+if GCOV_ENABLED
+DBGFLAGS = -DGCOV_ENABLED
+endif
+
 COMMON_ORCH_SOURCE = $(top_srcdir)/orchagent/orch.cpp \
 				$(top_srcdir)/orchagent/request_parser.cpp \
 				$(top_srcdir)/orchagent/response_publisher.cpp \

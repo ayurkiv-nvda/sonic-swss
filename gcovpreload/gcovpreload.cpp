@@ -41,3 +41,7 @@ void ctor()
         }
     }
 }
+
+void gcov_register()
+{
+}

@@ -16,8 +16,16 @@ using namespace swss;
 /* select() function timeout retry time, in millisecond */
 #define SELECT_TIMEOUT 1000
 
+#ifdef GCOV_ENABLED
+extern void gcov_register();
+#endif
+
 int main(int argc, char **argv)
 {
+#ifdef GCOV_ENABLED
+    gcov_register();
+#endif
+
     Logger::linkToDbNative("intfmgrd");
     SWSS_LOG_ENTER();
 
