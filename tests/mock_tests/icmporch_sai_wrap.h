@@ -17,9 +17,9 @@ namespace icmporch_sai_wrap_ut
 
     void setIcmpSaiHookQueryEnumFail();
 
-    void setIcmpSaiHookQueryEnumByteOnlyNoPacketModes();
+    void setIcmpSaiHookQueryEnumEmptyList();
 
-    void setIcmpSaiHookQueryEnumPacketOnly();
+    void setIcmpSaiHookQueryEnumPacketAndByteOnly();
 
     struct IcmpSaiHookGuard
     {
